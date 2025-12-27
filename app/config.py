@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     app_base_url: str
     database_url: str = "sqlite:///./data/avito_responder.db"
     message_context_limit: int = 20
+    
+    # Admin panel
+    admin_password: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
