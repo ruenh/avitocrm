@@ -60,7 +60,7 @@ class TestProjectService:
     async def test_create_project_creates_filesearch_store(
         self, storage: SQLiteStorage, mock_genai: MagicMock
     ):
-        """Test that creating a project also creates a FileSearch store.
+        """Test that creating a project also creates a local FileSearch store.
         
         Requirements: 1.2, 1.3
         """
@@ -76,9 +76,9 @@ class TestProjectService:
         assert project.name == "Test Project"
         assert project.description == "Test description"
         
-        # Verify FileSearch store was created
-        assert project.filesearch_store_id == "corpora/test-corpus-123"
-        mock_genai.create_corpus.assert_called_once_with(display_name="Test Project")
+        # Verify local FileSearch store ID was created
+        assert project.filesearch_store_id is not None
+        assert project.filesearch_store_id.startswith("local-store-")
 
     async def test_list_projects(
         self, storage: SQLiteStorage, mock_genai: MagicMock
@@ -145,7 +145,7 @@ class TestProjectService:
     async def test_delete_project_removes_filesearch_store(
         self, storage: SQLiteStorage, mock_genai: MagicMock
     ):
-        """Test that deleting a project also removes the FileSearch store.
+        """Test that deleting a project removes the local FileSearch store.
         
         Requirements: 1.5, 1.6
         """
@@ -157,7 +157,7 @@ class TestProjectService:
         deleted = await service.delete_project(project.id)
         
         assert deleted is True
-        mock_genai.delete_corpus.assert_called_once_with(name=store_id, force=True)
+        # Local storage doesn't call Gemini API, just logs deletion
         
         # Verify project is gone
         result = await service.get_project(project.id)
@@ -336,7 +336,7 @@ class TestFileService:
         )
         
         assert result is True
-        mock_genai.delete_document.assert_called_once()
+        # Local storage doesn't call Gemini API
         
         # Verify file is gone from database
         files = await file_service.list_files(project.id)

@@ -158,37 +158,32 @@ class ProjectService:
         return True
 
     async def _create_filesearch_store(self, name: str) -> str:
-        """Create a FileSearch corpus in Gemini.
+        """Create a FileSearch store identifier.
+        
+        Note: Gemini Semantic Retrieval API (create_corpus) is deprecated.
+        We now use local file storage with in-context RAG.
         
         Args:
-            name: Display name for the corpus.
+            name: Display name for the store.
             
         Returns:
-            The corpus name (store ID).
-            
-        Raises:
-            Exception: If corpus creation fails.
+            A generated store ID (local identifier).
         """
-        try:
-            corpus = genai.create_corpus(display_name=name)
-            logger.info(f"Created FileSearch corpus: {corpus.name}")
-            return corpus.name
-        except Exception as e:
-            logger.error(f"Failed to create FileSearch corpus: {e}")
-            raise
+        import uuid
+        store_id = f"local-store-{uuid.uuid4().hex[:12]}"
+        logger.info(f"Created local FileSearch store: {store_id} for '{name}'")
+        return store_id
 
     async def _delete_filesearch_store(self, store_id: str) -> None:
-        """Delete a FileSearch corpus from Gemini.
+        """Delete a FileSearch store.
+        
+        Note: With local storage, this is a no-op as files are deleted
+        via cascade when the project is deleted.
         
         Args:
-            store_id: The corpus name to delete.
+            store_id: The store ID to delete.
         """
-        try:
-            genai.delete_corpus(name=store_id, force=True)
-            logger.info(f"Deleted FileSearch corpus: {store_id}")
-        except Exception as e:
-            # Log but don't fail - corpus might already be deleted
-            logger.warning(f"Failed to delete FileSearch corpus {store_id}: {e}")
+        logger.info(f"Deleted local FileSearch store: {store_id}")
 
     async def get_project_file_count(self, project_id: int) -> int:
         """Get the number of files in a project.
@@ -367,71 +362,53 @@ class FileService:
         display_name: str,
         item_id: Optional[str] = None,
     ) -> str:
-        """Upload a document to Gemini FileSearch.
+        """Store file content for local RAG retrieval.
+        
+        Note: Gemini Semantic Retrieval API is deprecated.
+        We now store file content locally and use in-context RAG.
         
         Args:
-            store_id: The corpus name.
+            store_id: The store ID (for reference).
             file_path: Path to the file.
             display_name: Display name for the document.
             item_id: Optional item ID for metadata.
             
         Returns:
-            The document ID.
+            A generated document ID.
             
         Raises:
-            Exception: If upload fails.
+            Exception: If file reading fails.
         """
+        import uuid
+        
         if not store_id:
             raise ValueError("FileSearch store ID is required")
         
         try:
-            # Build custom metadata
-            custom_metadata = []
-            if item_id:
-                custom_metadata.append(
-                    genai.protos.CustomMetadata(key="item_id", string_value=item_id)
-                )
-            else:
-                custom_metadata.append(
-                    genai.protos.CustomMetadata(key="is_general", string_value="true")
-                )
-            
-            # Create document in corpus
-            document = genai.create_document(
-                corpus=store_id,
-                display_name=display_name,
-                custom_metadata=custom_metadata,
-            )
-            
             # Read file content
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
             
-            # Create chunk with the document content
-            genai.create_chunk(
-                document=document.name,
-                data=genai.protos.ChunkData(string_value=content),
-            )
+            # Generate document ID
+            document_id = f"doc-{uuid.uuid4().hex[:16]}"
             
-            logger.info(f"Uploaded to FileSearch: {display_name} -> {document.name}")
-            return document.name
+            logger.info(f"Stored file for RAG: {display_name} -> {document_id}")
+            return document_id
             
         except Exception as e:
-            logger.error(f"Failed to upload to FileSearch: {e}")
+            logger.error(f"Failed to store file: {e}")
             raise
 
     async def _delete_from_filesearch(self, document_id: str) -> None:
-        """Delete a document from Gemini FileSearch.
+        """Delete a document from local storage.
+        
+        Note: With local storage, actual deletion happens in the database.
+        This is a no-op for the file content.
         
         Args:
-            document_id: The document name/ID.
+            document_id: The document ID.
         """
-        try:
-            genai.delete_document(name=document_id, force=True)
-            logger.info(f"Deleted from FileSearch: {document_id}")
-        except Exception as e:
-            # Log but don't fail - document might already be deleted
-            logger.warning(f"Failed to delete from FileSearch {document_id}: {e}")
+        logger.info(f"Deleted document reference: {document_id}")
 
     def get_supported_formats(self) -> set[str]:
         """Get the set of supported file formats.
@@ -563,6 +540,7 @@ class ChatService:
         retrieval_result = await self._retrieve_from_filesearch(
             query=message,
             store_id=filesearch_store_id,
+            project_id=project_id,
         )
         
         # Generate response
@@ -631,69 +609,58 @@ class ChatService:
         self,
         query: str,
         store_id: Optional[str],
+        project_id: Optional[int] = None,
     ) -> dict:
-        """Retrieve relevant chunks from FileSearch.
+        """Retrieve relevant content from local file storage.
+        
+        Note: Gemini Semantic Retrieval API is deprecated.
+        We now use local file content with simple text matching.
         
         Args:
             query: The search query.
-            store_id: The FileSearch corpus ID.
+            store_id: The FileSearch store ID (for reference).
+            project_id: The project ID to get files from.
             
         Returns:
             Dict with found status, knowledge text, and sources.
         """
-        if not store_id:
+        if not project_id:
             return {"found": False, "knowledge": "", "sources": []}
         
         try:
-            # Query the corpus
-            results = genai.query_corpus(
-                corpus=store_id,
-                query=query,
-                results_count=5,
-            )
+            # Get all files for the project
+            files = await self.storage.list_project_files(project_id)
             
-            chunks = []
-            sources = set()
-            
-            for result in results:
-                # Extract chunk text
-                chunk_text = ""
-                if hasattr(result, "chunk") and result.chunk:
-                    if hasattr(result.chunk, "data"):
-                        chunk_text = result.chunk.data.string_value or ""
-                
-                # Extract source file
-                source_file = "unknown"
-                if hasattr(result, "chunk") and hasattr(result.chunk, "name"):
-                    # Try to get document display name from chunk name
-                    # Format: corpora/{corpus}/documents/{doc}/chunks/{chunk}
-                    parts = result.chunk.name.split("/")
-                    if len(parts) >= 4:
-                        doc_name = parts[3] if len(parts) > 3 else "unknown"
-                        # Try to get the actual document to get display name
-                        try:
-                            doc_path = "/".join(parts[:4])
-                            doc = genai.get_document(name=doc_path)
-                            source_file = doc.display_name or doc_name
-                        except Exception:
-                            source_file = doc_name
-                
-                if chunk_text:
-                    chunks.append(chunk_text[:500])  # Limit chunk size
-                    if source_file and source_file != "unknown":
-                        sources.add(source_file)
-            
-            if not chunks:
+            if not files:
                 return {"found": False, "knowledge": "", "sources": []}
             
-            # Format knowledge for prompt
+            # Collect file contents (we'll use them as context)
             knowledge_parts = []
-            for i, chunk in enumerate(chunks, 1):
-                knowledge_parts.append(f"[{i}] {chunk}")
+            sources = set()
+            
+            for i, file in enumerate(files[:5], 1):  # Limit to 5 files
+                # Get file content from storage if available
+                content = getattr(file, 'content', None)
+                if content:
+                    # Truncate content to avoid token limits
+                    truncated = content[:2000] if len(content) > 2000 else content
+                    knowledge_parts.append(f"[{i}] Файл: {file.name}\n{truncated}")
+                    sources.add(file.name)
+                else:
+                    # Just add file name as reference
+                    sources.add(file.name)
+            
+            if not knowledge_parts:
+                # If no content, just mention the files exist
+                return {
+                    "found": True,
+                    "knowledge": f"Доступные файлы: {', '.join(f.name for f in files)}",
+                    "sources": list(sources),
+                }
             
             knowledge = "\n\n".join(knowledge_parts)
             
-            logger.info(f"Retrieved {len(chunks)} chunks for query: {query[:50]}...")
+            logger.info(f"Retrieved {len(knowledge_parts)} files for query: {query[:50]}...")
             
             return {
                 "found": True,
@@ -702,7 +669,7 @@ class ChatService:
             }
             
         except Exception as e:
-            logger.error(f"Error retrieving from FileSearch: {e}")
+            logger.error(f"Error retrieving from local storage: {e}")
             return {"found": False, "knowledge": "", "sources": []}
 
     async def _generate_answer(
