@@ -1,0 +1,398 @@
+{% extends "base.html" %} {% import "components/toast.html" as toast %} {% block
+title %}Чат - {{ project.name }}{% endblock %} {% block header %}{{ project.name
+}}{% endblock %} {% block content %}
+<div class="flex flex-col h-[calc(100vh-12rem)]">
+  <!-- Back button and project info -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-4">
+      <a
+        href="/admin/projects"
+        class="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        Назад
+      </a>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">{{ project.name }}</h2>
+        {% if project.description %}
+        <p class="text-gray-500">{{ project.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Project stats -->
+    <div class="flex items-center gap-4 text-sm text-gray-500">
+      <div class="flex items-center gap-1">
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <span>{{ file_count }} файлов</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+          />
+        </svg>
+        <span>{{ message_count }} сообщений</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-gray-200 mb-4">
+    <nav class="flex gap-8">
+      <a
+        href="/admin/projects/{{ project.id }}/files"
+        class="py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Файлы
+      </a>
+      <a
+        href="/admin/projects/{{ project.id }}/chat"
+        class="py-3 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm"
+      >
+        Чат
+      </a>
+      <a
+        href="/admin/projects/{{ project.id }}/avito"
+        class="py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Avito
+      </a>
+    </nav>
+  </div>
+
+  <!-- Chat container -->
+  <div
+    class="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden"
+  >
+    <!-- Chat header -->
+    <div
+      class="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50"
+    >
+      <div class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-blue-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+          />
+        </svg>
+        <span class="font-medium text-gray-700">Тестовый чат</span>
+      </div>
+      <button
+        hx-delete="/admin/projects/{{ project.id }}/chat"
+        hx-confirm="Очистить историю чата?"
+        class="text-gray-400 hover:text-red-500 text-sm flex items-center gap-1"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+        Очистить
+      </button>
+    </div>
+
+    <!-- Messages area -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+      {% if messages %} {% for msg in messages %} {% if msg.role == 'user' %}
+      <!-- User message -->
+      <div class="flex justify-end">
+        <div
+          class="max-w-[70%] bg-blue-500 text-white rounded-lg px-4 py-2 shadow-sm"
+        >
+          <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+        </div>
+      </div>
+      {% else %}
+      <!-- Assistant message -->
+      <div class="flex justify-start">
+        <div
+          class="max-w-[70%] bg-gray-100 text-gray-800 rounded-lg px-4 py-2 shadow-sm"
+        >
+          <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+          {% if msg.sources %}
+          <div class="mt-2 pt-2 border-t border-gray-200">
+            <div class="flex items-center gap-1 text-xs text-gray-500">
+              <svg
+                class="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+              <span>Источники: {{ msg.sources | join(', ') }}</span>
+            </div>
+          </div>
+          {% endif %} {% if msg.found_status %}
+          <div class="mt-1">
+            {% if msg.found_status == 'FOUND' %}
+            <span class="inline-flex items-center gap-1 text-xs text-green-600">
+              <svg
+                class="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Найдено в базе знаний
+            </span>
+            {% elif msg.found_status == 'NOT_FOUND' %}
+            <span class="inline-flex items-center gap-1 text-xs text-amber-600">
+              <svg
+                class="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              Не найдено в базе знаний
+            </span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %} {% endfor %} {% else %}
+      <!-- Empty state -->
+      <div
+        class="flex flex-col items-center justify-center h-full text-gray-400"
+      >
+        <svg
+          class="w-16 h-16 mb-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+          />
+        </svg>
+        <p class="text-lg">Начните диалог</p>
+        <p class="text-sm">Задайте вопрос для проверки базы знаний</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Typing indicator (hidden by default) -->
+    <div
+      id="typing-indicator"
+      class="hidden px-4 py-2 border-t border-gray-100"
+    >
+      <div class="flex items-center gap-2 text-gray-500 text-sm">
+        <div class="flex gap-1">
+          <span
+            class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+            style="animation-delay: 0ms"
+          ></span>
+          <span
+            class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+            style="animation-delay: 150ms"
+          ></span>
+          <span
+            class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+            style="animation-delay: 300ms"
+          ></span>
+        </div>
+        <span>Ассистент печатает...</span>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+      <form
+        id="chat-form"
+        hx-post="/admin/projects/{{ project.id }}/chat"
+        hx-target="#chat-messages"
+        hx-swap="beforeend"
+        hx-indicator="#typing-indicator"
+        class="flex gap-3"
+      >
+        <input
+          type="text"
+          name="message"
+          id="message-input"
+          placeholder="Введите сообщение..."
+          required
+          autocomplete="off"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        />
+        <button
+          type="submit"
+          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm font-medium flex items-center gap-2"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
+          </svg>
+          Отправить
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if toast %} {% if toast.type == 'success' %} {{ toast.success(toast.message)
+}} {% elif toast.type == 'error' %} {{ toast.error(toast.message) }} {% endif %}
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  // Scroll to bottom of chat on load
+  function scrollToBottom() {
+    const chatMessages = document.getElementById("chat-messages");
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  scrollToBottom();
+
+  // Clear input and scroll after sending message
+  document
+    .getElementById("chat-form")
+    .addEventListener("htmx:afterRequest", function (evt) {
+      document.getElementById("message-input").value = "";
+      setTimeout(scrollToBottom, 100);
+    });
+
+  // Show typing indicator
+  document.body.addEventListener("htmx:beforeRequest", function (evt) {
+    if (evt.detail.elt.id === "chat-form") {
+      document.getElementById("typing-indicator").classList.remove("hidden");
+    }
+  });
+
+  // Hide typing indicator
+  document.body.addEventListener("htmx:afterRequest", function (evt) {
+    if (evt.detail.elt.id === "chat-form") {
+      document.getElementById("typing-indicator").classList.add("hidden");
+    }
+  });
+
+  // Handle chat cleared event
+  document.body.addEventListener("chatCleared", function () {
+    document.getElementById("chat-messages").innerHTML = `
+      <div class="flex flex-col items-center justify-center h-full text-gray-400">
+        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <p class="text-lg">Начните диалог</p>
+        <p class="text-sm">Задайте вопрос для проверки базы знаний</p>
+      </div>
+    `;
+  });
+
+  // Handle toast notifications from HX-Trigger
+  document.body.addEventListener("showToast", function (evt) {
+    const toast = evt.detail;
+    const container = document.getElementById("toast-container");
+    const toastEl = document.createElement("div");
+
+    const bgColor =
+      toast.type === "success"
+        ? "bg-green-500"
+        : toast.type === "error"
+        ? "bg-red-500"
+        : "bg-amber-500";
+
+    toastEl.className = `toast-enter ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm cursor-pointer`;
+    toastEl.innerHTML = `
+      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        ${
+          toast.type === "success"
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'
+        }
+      </svg>
+      <span>${toast.message}</span>
+    `;
+
+    toastEl.onclick = function () {
+      this.classList.add("toast-exit");
+      setTimeout(() => this.remove(), 300);
+    };
+
+    container.appendChild(toastEl);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (toastEl.parentNode) {
+        toastEl.classList.add("toast-exit");
+        setTimeout(() => toastEl.remove(), 300);
+      }
+    }, 5000);
+  });
+</script>
+{% endblock %}

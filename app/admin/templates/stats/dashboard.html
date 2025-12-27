@@ -1,0 +1,337 @@
+{% extends "base.html" %} {% import "components/toast.html" as toast %} {% block
+title %}Статистика{% endblock %} {% block header %}Статистика{% endblock %} {%
+block content %}
+<div class="space-y-6">
+  <!-- Stats Cards -->
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <!-- Total Messages -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500">Всего сообщений</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">
+            {{ stats.total_messages }}
+          </p>
+        </div>
+        <div class="p-3 bg-blue-100 rounded-full">
+          <svg
+            class="w-6 h-6 text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 mt-2">
+        <span class="text-green-600 font-medium"
+          >{{ stats.messages_today }}</span
+        >
+        сегодня
+      </p>
+    </div>
+
+    <!-- Total Responses -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500">Ответов</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">
+            {{ stats.total_responses }}
+          </p>
+        </div>
+        <div class="p-3 bg-green-100 rounded-full">
+          <svg
+            class="w-6 h-6 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Escalations -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500">Эскалаций</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">
+            {{ stats.total_escalations }}
+          </p>
+        </div>
+        <div class="p-3 bg-amber-100 rounded-full">
+          <svg
+            class="w-6 h-6 text-amber-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Found Rate -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500">Найдено в базе</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">
+            {{ stats.found_rate }}%
+          </p>
+        </div>
+        <div class="p-3 bg-purple-100 rounded-full">
+          <svg
+            class="w-6 h-6 text-purple-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 mt-2">
+        <span class="font-medium">{{ stats.projects_count }}</span> проектов
+      </p>
+    </div>
+  </div>
+
+  <!-- Project Stats -->
+  {% if project_stats_list %}
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-900">
+        Статистика по проектам
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Проект
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Сообщений
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Ответов
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Эскалаций
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Найдено
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for item in project_stats_list %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <a
+                href="/admin/projects/{{ item.project.id }}/files"
+                class="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {{ item.project.name }}
+              </a>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+              {{ item.stats.total_messages }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+              {{ item.stats.total_responses }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+              {{ item.stats.total_escalations }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="{% if item.stats.found_rate >= 80 %}text-green-600{% elif item.stats.found_rate >= 50 %}text-amber-600{% else %}text-red-600{% endif %} font-medium"
+              >
+                {{ item.stats.found_rate }}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Dialogs -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div
+      class="px-6 py-4 border-b border-gray-200 flex items-center justify-between"
+    >
+      <h2 class="text-lg font-semibold text-gray-900">Последние диалоги</h2>
+      <a
+        href="/admin/stats/dialogs"
+        class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+      >
+        Все диалоги
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+    {% if recent_dialogs %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chat ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вопрос</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ответ</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for dialog in recent_dialogs %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <a href="/admin/stats/dialogs?chat_id={{ dialog.chat_id }}" class="text-blue-600 hover:text-blue-800 font-mono text-sm">
+                {{ dialog.chat_id[:12] }}...
+              </a>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-gray-900 truncate max-w-xs" title="{{ dialog.customer_question }}">
+                {{ dialog.customer_question[:50] }}{% if dialog.customer_question|length > 50 %}...{% endif %}
+              </p>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-gray-600 truncate max-w-xs" title="{{ dialog.bot_answer }}">
+                {{ dialog.bot_answer[:50] }}{% if dialog.bot_answer|length > 50 %}...{% endif %}
+              </p>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if dialog.found_status == 'FOUND' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                ✅ FOUND
+              </span>
+              {% elif dialog.found_status == 'NOT_FOUND' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                ❌ NOT_FOUND
+              </span>
+              {% elif dialog.found_status == 'ESCALATION' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                🔔 ESCALATION
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {% if dialog.created_at %}
+              {{ dialog.created_at.strftime('%d.%m %H:%M') }}
+              {% else %}
+              —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+      <div class="text-gray-400 mb-4">
+        <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Нет диалогов</h3>
+      <p class="text-gray-500">Диалоги появятся после первых сообщений от клиентов</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if toast %}
+  {% if toast.type == 'success' %}
+    {{ toast.success(toast.message) }}
+  {% elif toast.type == 'error' %}
+    {{ toast.error(toast.message) }}
+  {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Handle toast from HX-Trigger
+  document.body.addEventListener('showToast', function(evt) {
+    const data = evt.detail;
+    const container = document.getElementById('toast-container');
+    
+    const toastClass = data.type === 'success' ? 'bg-green-500' : 
+                       data.type === 'error' ? 'bg-red-500' : 'bg-amber-500';
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-enter ${toastClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm cursor-pointer`;
+    toast.innerHTML = `<span>${data.message}</span>`;
+    toast.onclick = function() {
+      this.classList.add('toast-exit');
+      setTimeout(() => this.remove(), 300);
+    };
+    
+    container.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  });
+</script>
+{% endblock %}

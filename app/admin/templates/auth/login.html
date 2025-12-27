@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Вход - Avito AI Admin</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#3b82f6",
+              sidebar: "#1f2937",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/static/css/admin.css" />
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center gap-3 text-gray-800">
+          <span class="text-4xl">🤖</span>
+          <span class="font-semibold text-2xl">Avito AI</span>
+        </div>
+        <p class="text-gray-500 mt-2">Панель управления</p>
+      </div>
+
+      <!-- Login form -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <h1 class="text-xl font-semibold text-gray-800 mb-6 text-center">
+          Вход в систему
+        </h1>
+
+        {% if error %}
+        <div
+          class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2"
+        >
+          <svg
+            class="w-5 h-5 flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/admin/login" class="space-y-6">
+          <div>
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Пароль
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              autofocus
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              placeholder="Введите пароль"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            Войти
+          </button>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <p class="text-center text-gray-400 text-sm mt-6">
+        Avito AI Auto-Responder v1.0.0
+      </p>
+    </div>
+  </body>
+</html>

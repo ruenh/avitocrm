@@ -1,0 +1,194 @@
+<!-- Edit Project Modal (included in list.html) -->
+<div id="edit-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div
+    class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0"
+  >
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+      onclick="document.getElementById('edit-modal').classList.add('hidden')"
+    ></div>
+
+    <!-- Modal panel -->
+    <div
+      class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto z-10"
+    >
+      <form
+        id="edit-form"
+        hx-put=""
+        hx-target="#projects-list"
+        hx-swap="innerHTML"
+      >
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">
+            Редактировать проект
+          </h3>
+        </div>
+
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label
+              for="edit-name"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Название проекта *
+            </label>
+            <input
+              type="text"
+              id="edit-name"
+              name="name"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+
+          <div>
+            <label
+              for="edit-description"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Описание
+            </label>
+            <textarea
+              id="edit-description"
+              name="description"
+              rows="3"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            type="button"
+            onclick="document.getElementById('edit-modal').classList.add('hidden')"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span class="htmx-indicator">
+              {% include "components/loading.html" %}
+            </span>
+            Сохранить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div
+    class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0"
+  >
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+      onclick="document.getElementById('delete-modal').classList.add('hidden')"
+    ></div>
+
+    <!-- Modal panel -->
+    <div
+      class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto z-10"
+    >
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Удалить проект?</h3>
+      </div>
+
+      <div class="px-6 py-4">
+        <p class="text-gray-600">
+          Вы уверены, что хотите удалить проект
+          <strong id="delete-project-name"></strong>?
+        </p>
+        <p class="text-sm text-red-600 mt-2">
+          Это действие нельзя отменить. Все файлы и история чата будут удалены.
+        </p>
+      </div>
+
+      <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+        <button
+          type="button"
+          onclick="document.getElementById('delete-modal').classList.add('hidden')"
+          class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+        >
+          Отмена
+        </button>
+        <button
+          id="delete-confirm-btn"
+          type="button"
+          class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openEditModal(projectId, name, description) {
+    const modal = document.getElementById("edit-modal");
+    const form = document.getElementById("edit-form");
+    const nameInput = document.getElementById("edit-name");
+    const descInput = document.getElementById("edit-description");
+
+    // Set form action
+    form.setAttribute("hx-put", `/admin/projects/${projectId}`);
+    htmx.process(form);
+
+    // Fill form values
+    nameInput.value = name;
+    descInput.value = description || "";
+
+    // Show modal
+    modal.classList.remove("hidden");
+
+    // Close dropdown
+    document.querySelectorAll(".relative > div:not(.hidden)").forEach((el) => {
+      if (el.classList.contains("absolute")) {
+        el.classList.add("hidden");
+      }
+    });
+  }
+
+  function confirmDelete(projectId, projectName) {
+    const modal = document.getElementById("delete-modal");
+    const nameEl = document.getElementById("delete-project-name");
+    const confirmBtn = document.getElementById("delete-confirm-btn");
+
+    nameEl.textContent = projectName;
+
+    // Set up delete action
+    confirmBtn.onclick = function () {
+      htmx.ajax("DELETE", `/admin/projects/${projectId}`, {
+        target: `#project-${projectId}`,
+        swap: "delete",
+      });
+      modal.classList.add("hidden");
+    };
+
+    // Show modal
+    modal.classList.remove("hidden");
+
+    // Close dropdown
+    document.querySelectorAll(".relative > div:not(.hidden)").forEach((el) => {
+      if (el.classList.contains("absolute")) {
+        el.classList.add("hidden");
+      }
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".relative")) {
+      document.querySelectorAll(".relative > div.absolute").forEach((el) => {
+        el.classList.add("hidden");
+      });
+    }
+  });
+</script>

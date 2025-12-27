@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% import "components/toast.html" as toast %}
+
+{% block title %}История диалогов{% endblock %}
+{% block header %}История диалогов{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <form method="get" action="/admin/stats/dialogs" class="flex flex-wrap gap-4 items-end">
+      <!-- Project filter -->
+      <div class="flex-1 min-w-[200px]">
+        <label for="project_id" class="block text-sm font-medium text-gray-700 mb-1">Проект</label>
+        <select 
+          id="project_id" 
+          name="project_id" 
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        >
+          <option value="">Все проекты</option>
+          {% for project in projects %}
+          <option value="{{ project.id }}" {% if selected_project_id == project.id %}selected{% endif %}>
+            {{ project.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status filter -->
+      <div class="flex-1 min-w-[200px]">
+        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
+        <select 
+          id="status" 
+          name="status" 
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        >
+          <option value="">Все статусы</option>
+          <option value="FOUND" {% if selected_status == 'FOUND' %}selected{% endif %}>✅ FOUND</option>
+          <option value="NOT_FOUND" {% if selected_status == 'NOT_FOUND' %}selected{% endif %}>❌ NOT_FOUND</option>
+          <option value="ESCALATION" {% if selected_status == 'ESCALATION' %}selected{% endif %}>🔔 ESCALATION</option>
+        </select>
+      </div>
+
+      <!-- Chat ID filter -->
+      <div class="flex-1 min-w-[200px]">
+        <label for="chat_id" class="block text-sm font-medium text-gray-700 mb-1">Chat ID</label>
+        <input 
+          type="text" 
+          id="chat_id" 
+          name="chat_id" 
+          value="{{ selected_chat_id or '' }}"
+          placeholder="Введите chat_id..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        />
+      </div>
+
+      <!-- Submit button -->
+      <div>
+        <button 
+          type="submit" 
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Применить
+        </button>
+      </div>
+
+      <!-- Reset button -->
+      <div>
+        <a 
+          href="/admin/stats/dialogs" 
+          class="inline-block px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          Сбросить
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Active filters info -->
+  {% if selected_project_id or selected_status or selected_chat_id %}
+  <div class="flex items-center gap-2 text-sm text-gray-600">
+    <span>Фильтры:</span>
+    {% if selected_project_id %}
+    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+      Проект: {{ project_map.get(selected_project_id, 'Unknown') }}
+    </span>
+    {% endif %}
+    {% if selected_status %}
+    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+      Статус: {{ selected_status }}
+    </span>
+    {% endif %}
+    {% if selected_chat_id %}
+    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+      Chat: {{ selected_chat_id[:20] }}...
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Dialogs table -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    {% if dialogs %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chat ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Проект</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вопрос</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ответ</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for dialog in dialogs %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <a href="/admin/stats/dialogs?chat_id={{ dialog.chat_id }}" class="text-blue-600 hover:text-blue-800 font-mono text-sm">
+                {{ dialog.chat_id[:12] }}...
+              </a>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if dialog.project_id %}
+              <a href="/admin/projects/{{ dialog.project_id }}/files" class="text-blue-600 hover:text-blue-800">
+                {{ project_map.get(dialog.project_id, 'Unknown') }}
+              </a>
+              {% else %}
+              <span class="text-gray-400">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-gray-900 max-w-xs" title="{{ dialog.customer_question }}">
+                {{ dialog.customer_question[:80] }}{% if dialog.customer_question|length > 80 %}...{% endif %}
+              </p>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-gray-600 max-w-xs" title="{{ dialog.bot_answer }}">
+                {{ dialog.bot_answer[:80] }}{% if dialog.bot_answer|length > 80 %}...{% endif %}
+              </p>
+              {% if dialog.sources %}
+              <p class="text-xs text-gray-400 mt-1">
+                📚 {{ dialog.sources|join(', ') }}
+              </p>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if dialog.found_status == 'FOUND' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                ✅ FOUND
+              </span>
+              {% elif dialog.found_status == 'NOT_FOUND' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                ❌ NOT_FOUND
+              </span>
+              {% elif dialog.found_status == 'ESCALATION' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                🔔 ESCALATION
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {% if dialog.created_at %}
+              {{ dialog.created_at.strftime('%d.%m.%Y %H:%M') }}
+              {% else %}
+              —
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+      <div class="text-gray-400 mb-4">
+        <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Нет диалогов</h3>
+      <p class="text-gray-500">
+        {% if selected_project_id or selected_status or selected_chat_id %}
+        Нет диалогов, соответствующих выбранным фильтрам
+        {% else %}
+        Диалоги появятся после первых сообщений от клиентов
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Back to dashboard -->
+  <div>
+    <a href="/admin/stats" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Назад к статистике
+    </a>
+  </div>
+</div>
+
+{% if toast %}
+  {% if toast.type == 'success' %}
+    {{ toast.success(toast.message) }}
+  {% elif toast.type == 'error' %}
+    {{ toast.error(toast.message) }}
+  {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Handle toast from HX-Trigger
+  document.body.addEventListener('showToast', function(evt) {
+    const data = evt.detail;
+    const container = document.getElementById('toast-container');
+    
+    const toastClass = data.type === 'success' ? 'bg-green-500' : 
+                       data.type === 'error' ? 'bg-red-500' : 'bg-amber-500';
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-enter ${toastClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm cursor-pointer`;
+    toast.innerHTML = `<span>${data.message}</span>`;
+    toast.onclick = function() {
+      this.classList.add('toast-exit');
+      setTimeout(() => this.remove(), 300);
+    };
+    
+    container.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  });
+</script>
+{% endblock %}

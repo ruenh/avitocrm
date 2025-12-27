@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from typing import AsyncGenerator
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Request, Response
+from fastapi.staticfiles import StaticFiles
 
+from app.admin.auth import AdminAuthMiddleware
+from app.admin.routes import router as admin_router
 from app.avito.messenger_client import MessengerClient
 from app.avito.oauth import TokenManager
 from app.avito.webhook_models import WebhookPayload
@@ -148,6 +151,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         telegram_notifier=telegram_notifier,
         bot_user_id=settings.avito_user_id,
         context_limit=settings.message_context_limit,
+        gemini_api_key=settings.gemini_api_key,
     )
     logger.info("Auto Responder initialized")
 
@@ -180,6 +184,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Add admin auth middleware
+app.add_middleware(AdminAuthMiddleware)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Include admin router
+app.include_router(admin_router)
 
 
 async def process_webhook_event(

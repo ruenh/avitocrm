@@ -1,0 +1,205 @@
+{% extends "base.html" %} {% import "components/toast.html" as toast %} {% block
+title %}Проекты{% endblock %} {% block header %}Проекты{% endblock %} {% block
+content %}
+<div class="space-y-6">
+  <!-- Header with create button -->
+  <div class="flex items-center justify-between">
+    <p class="text-gray-600">Управление проектами и базами знаний</p>
+    <button
+      type="button"
+      onclick="document.getElementById('create-modal').classList.remove('hidden')"
+      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      Новый проект
+    </button>
+  </div>
+
+  <!-- Projects list -->
+  <div id="projects-list">
+    {% if project_stats %}
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {% for item in project_stats %} {% include "projects/card.html" with
+      context %} {% endfor %}
+    </div>
+    {% else %}
+    <div
+      class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center"
+    >
+      <div class="text-gray-400 mb-4">
+        <svg
+          class="w-16 h-16 mx-auto"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+          />
+        </svg>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Нет проектов</h3>
+      <p class="text-gray-500 mb-6">Создайте первый проект для начала работы</p>
+      <button
+        type="button"
+        onclick="document.getElementById('create-modal').classList.remove('hidden')"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        Создать проект
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Create Project Modal -->
+<div id="create-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div
+    class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0"
+  >
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+      onclick="document.getElementById('create-modal').classList.add('hidden')"
+    ></div>
+
+    <!-- Modal panel -->
+    <div
+      class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto z-10"
+    >
+      <form hx-post="/admin/projects" hx-target="body" hx-swap="innerHTML">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">Новый проект</h3>
+        </div>
+
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label
+              for="name"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Название проекта *
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              placeholder="Например: iPhone Store"
+            />
+          </div>
+
+          <div>
+            <label
+              for="description"
+              class="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Описание
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows="3"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+              placeholder="Краткое описание проекта..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            type="button"
+            onclick="document.getElementById('create-modal').classList.add('hidden')"
+            class="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span class="htmx-indicator">
+              {% include "components/loading.html" %}
+            </span>
+            Создать
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if toast %} {% if toast.type == 'success' %} {{ toast.success(toast.message)
+}} {% elif toast.type == 'error' %} {{ toast.error(toast.message) }} {% elif
+toast.type == 'warning' %} {{ toast.warning(toast.message) }} {% endif %} {%
+endif %}
+
+<!-- Edit and Delete Modals -->
+{% include "projects/form.html" %} {% endblock %} {% block scripts %}
+<script>
+  // Handle toast from HX-Trigger
+  document.body.addEventListener("showToast", function (evt) {
+    const data = evt.detail;
+    const container = document.getElementById("toast-container");
+
+    const toastClass =
+      data.type === "success"
+        ? "bg-green-500"
+        : data.type === "error"
+        ? "bg-red-500"
+        : "bg-amber-500";
+
+    const toast = document.createElement("div");
+    toast.className = `toast-enter ${toastClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm cursor-pointer`;
+    toast.innerHTML = `<span>${data.message}</span>`;
+    toast.onclick = function () {
+      this.classList.add("toast-exit");
+      setTimeout(() => this.remove(), 300);
+    };
+
+    container.appendChild(toast);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add("toast-exit");
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 5000);
+  });
+
+  // Refresh page when project is deleted
+  document.body.addEventListener("projectDeleted", function () {
+    window.location.reload();
+  });
+</script>
+{% endblock %}
