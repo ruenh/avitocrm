@@ -487,8 +487,10 @@ async def upload_file(
         item_id: Optional item ID for product-specific documents.
         
     Returns:
-        Updated files list or error.
+        Updated files table partial or error.
     """
+    import json
+    
     project_service = _get_project_service()
     file_service = _get_file_service()
     
@@ -514,67 +516,59 @@ async def upload_file(
         
         logger.info(f"Uploaded file to project {project_id}: {file.filename}")
         
-        # Return updated files list
+        # Return updated files table partial
         files = await file_service.list_files(project_id)
-        file_count = len(files)
-        message_count = await project_service.get_project_message_count(project_id)
-        supported_formats = file_service.get_supported_formats()
         
-        return templates.TemplateResponse(
-            "files/list.html",
+        response = templates.TemplateResponse(
+            "files/table.html",
             {
                 "request": request,
                 "project": project,
                 "files": files,
-                "file_count": file_count,
-                "message_count": message_count,
-                "supported_formats": ", ".join(sorted(supported_formats)),
-                "toast": {"type": "success", "message": f"Файл '{file.filename}' загружен"},
             },
         )
+        # Add toast notification via HX-Trigger
+        response.headers["HX-Trigger"] = json.dumps({
+            "showToast": {"type": "success", "message": f"Файл '{file.filename}' загружен"}
+        })
+        return response
         
     except ValueError as e:
         # Invalid file format
         logger.warning(f"Invalid file format: {e}")
         
         files = await file_service.list_files(project_id)
-        file_count = len(files)
-        message_count = await project_service.get_project_message_count(project_id)
-        supported_formats = file_service.get_supported_formats()
         
-        return templates.TemplateResponse(
-            "files/list.html",
+        response = templates.TemplateResponse(
+            "files/table.html",
             {
                 "request": request,
                 "project": project,
                 "files": files,
-                "file_count": file_count,
-                "message_count": message_count,
-                "supported_formats": ", ".join(sorted(supported_formats)),
-                "toast": {"type": "error", "message": str(e)},
             },
         )
+        response.headers["HX-Trigger"] = json.dumps({
+            "showToast": {"type": "error", "message": str(e)}
+        })
+        return response
         
     except Exception as e:
         logger.error(f"Failed to upload file: {e}")
         
         files = await file_service.list_files(project_id)
-        file_count = len(files)
-        message_count = await project_service.get_project_message_count(project_id)
-        supported_formats = file_service.get_supported_formats()
         
-        return templates.TemplateResponse(
-            "files/list.html",
+        response = templates.TemplateResponse(
+            "files/table.html",
             {
                 "request": request,
                 "project": project,
                 "files": files,
-                "file_count": file_count,
-                "message_count": message_count,
-                "supported_formats": ", ".join(sorted(supported_formats)),
-                "toast": {"type": "error", "message": f"Ошибка загрузки: {str(e)}"},
             },
         )
+        response.headers["HX-Trigger"] = json.dumps({
+            "showToast": {"type": "error", "message": f"Ошибка загрузки: {str(e)}"}
+        })
+        return response
 
 
 @router.delete("/projects/{project_id}/files/{file_id:path}", response_class=HTMLResponse)
