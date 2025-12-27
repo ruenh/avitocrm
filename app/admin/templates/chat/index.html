@@ -273,6 +273,7 @@ title %}Чат - {{ project.name }}{% endblock %} {% block header %}{{ project.n
         hx-target="#chat-messages"
         hx-swap="beforeend"
         hx-indicator="#typing-indicator"
+        hx-on::after-request="this.reset()"
         class="flex gap-3"
       >
         <input
@@ -319,27 +320,34 @@ title %}Чат - {{ project.name }}{% endblock %} {% block header %}{{ project.n
   }
   scrollToBottom();
 
-  // Clear input and scroll after sending message
+  // Clear input BEFORE sending and scroll after response
   document
     .getElementById("chat-form")
-    .addEventListener("htmx:afterRequest", function (evt) {
-      document.getElementById("message-input").value = "";
+    .addEventListener("htmx:beforeRequest", function (evt) {
+      // Store the message and clear input immediately
+      const input = document.getElementById("message-input");
+      input.dataset.lastMessage = input.value;
+      input.value = "";
+      document.getElementById("typing-indicator").classList.remove("hidden");
+    });
+
+  document
+    .getElementById("chat-form")
+    .addEventListener("htmx:afterSwap", function (evt) {
+      document.getElementById("typing-indicator").classList.add("hidden");
       setTimeout(scrollToBottom, 100);
     });
 
-  // Show typing indicator
-  document.body.addEventListener("htmx:beforeRequest", function (evt) {
-    if (evt.detail.elt.id === "chat-form") {
-      document.getElementById("typing-indicator").classList.remove("hidden");
-    }
-  });
-
-  // Hide typing indicator
-  document.body.addEventListener("htmx:afterRequest", function (evt) {
-    if (evt.detail.elt.id === "chat-form") {
+  // Handle errors - restore message if request failed
+  document
+    .getElementById("chat-form")
+    .addEventListener("htmx:responseError", function (evt) {
+      const input = document.getElementById("message-input");
+      if (input.dataset.lastMessage) {
+        input.value = input.dataset.lastMessage;
+      }
       document.getElementById("typing-indicator").classList.add("hidden");
-    }
-  });
+    });
 
   // Handle chat cleared event
   document.body.addEventListener("chatCleared", function () {
